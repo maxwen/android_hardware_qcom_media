@@ -458,6 +458,9 @@ static status_t updateDeviceInfo(int rx_device,int tx_device,
                 if(rx_device == temp_ptr->dev_id && tx_device == temp_ptr->dev_id_tx)
                     break;
 
+                LOGD("Device switch during voice call (RX, TX) = (%d, %d) -> (%d, %d)", DEV_ID(cur_rx), DEV_ID(cur_tx), DEV_ID(rx_device), DEV_ID(tx_device));
+                msm_route_voice(DEV_ID(cur_rx),DEV_ID(cur_tx), 0);
+                
                 if (isHTCPhone)
                     updateACDB(rx_device, tx_device, rx_acdb_id, tx_acdb_id);
 
@@ -1226,7 +1229,7 @@ status_t AudioHardware::setVoiceVolume(float v)
     }
     LOGV("msm_set_voice_rx_vol(%d) succeeded",vol);
 
-    if (mMode == AudioSystem::MODE_IN_CALL &&
+    /*if (mMode == AudioSystem::MODE_IN_CALL &&
         mCurSndDevice != SND_DEVICE_BT &&
         mCurSndDevice != SND_DEVICE_CARKIT &&
         mCurSndDevice != SND_DEVICE_BT_EC_OFF &&
@@ -1247,7 +1250,7 @@ status_t AudioHardware::setVoiceVolume(float v)
             LOGE("Could not set update_voice_acdb: %d", rc);
         else
             LOGI("update_voice_acdb(%d, %d) succeeded", new_tx_acdb, new_rx_acdb);
-    }
+    }*/
 
     return NO_ERROR;
 }
@@ -1343,7 +1346,7 @@ status_t get_batt_temp(int *batt_temp) {
 status_t do_tpa2051_control(int mode)
 {
     int fd, rc;
-    int tpa_mode = 0;
+    int tpa_mode = TPA2051_MODE_OFF;
     int batt_temp = 0;
 
     if (mode) {
@@ -1363,10 +1366,10 @@ status_t do_tpa2051_control(int mode)
                 tpa_mode = TPA2051_MODE_RING;
                 break;
             case DEVICE_HEADSET_RX:
-                tpa_mode = TPA2051_MODE_PLAYBACK_HEADSET;
+				tpa_mode = TPA2051_MODE_PLAYBACK_HEADSET;
                 break;
             case DEVICE_SPEAKER_RX:
-                tpa_mode = TPA2051_MODE_PLAYBACK_SPKR;
+ 		        tpa_mode = TPA2051_MODE_PLAYBACK_SPKR;
                 break;
             default:
                 break;
@@ -1414,89 +1417,89 @@ static status_t do_route_audio_rpc(uint32_t device,
 
     int new_rx_device = INVALID_DEVICE,new_tx_device = INVALID_DEVICE,fm_device = INVALID_DEVICE;
     Routing_table* temp = NULL;
-    LOGV("do_route_audio_rpc(%d, %d, %d)", device, ear_mute, mic_mute);
+    LOGD("do_route_audio_rpc(%d, %d, %d)", device, ear_mute, mic_mute);
 
     if(device == SND_DEVICE_HANDSET) {
         new_rx_device = DEVICE_HANDSET_RX;
         new_tx_device = DEVICE_HANDSET_TX;
-        LOGV("In HANDSET");
+        LOGD("In HANDSET");
     }
     else if(device == SND_DEVICE_SPEAKER) {
         new_rx_device = DEVICE_SPEAKER_RX;
         new_tx_device = DEVICE_SPEAKER_TX;
-        LOGV("In SPEAKER");
+        LOGD("In SPEAKER");
     }
     else if(device == SND_DEVICE_HEADSET) {
         new_rx_device = DEVICE_HEADSET_RX;
         new_tx_device = DEVICE_HEADSET_TX;
-        LOGV("In HEADSET");
+        LOGD("In HEADSET");
     }
     else if(device == SND_DEVICE_NO_MIC_HEADSET) {
         new_rx_device = DEVICE_HEADSET_RX;
         new_tx_device = DEVICE_HANDSET_TX;
-        LOGV("In NO MIC HEADSET");
+        LOGD("In NO MIC HEADSET");
     }
     else if (device == SND_DEVICE_FM_HANDSET) {
         fm_device = DEVICE_FMRADIO_HANDSET_RX;
-        LOGV("In FM HANDSET");
+        LOGD("In FM HANDSET");
     }
     else if(device == SND_DEVICE_FM_SPEAKER) {
         fm_device = DEVICE_FMRADIO_SPEAKER_RX;
-        LOGV("In FM SPEAKER");
+        LOGD("In FM SPEAKER");
     }
     else if(device == SND_DEVICE_FM_HEADSET) {
         fm_device = DEVICE_FMRADIO_HEADSET_RX;
-        LOGV("In FM HEADSET");
+        LOGD("In FM HEADSET");
     }
     else if(device == SND_DEVICE_IN_S_SADC_OUT_HANDSET) {
         new_rx_device = DEVICE_HANDSET_RX;
         new_tx_device = DEVICE_DUALMIC_HANDSET_TX;
-        LOGV("In DUALMIC_HANDSET");
+        LOGD("In DUALMIC_HANDSET");
     }
     else if(device == SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE) {
         new_rx_device = DEVICE_SPEAKER_RX;
         new_tx_device = DEVICE_DUALMIC_SPEAKER_TX;
-        LOGV("In DUALMIC_SPEAKER");
+        LOGD("In DUALMIC_SPEAKER");
     }
     else if(device == SND_DEVICE_TTY_FULL) {
         new_rx_device = DEVICE_TTY_HEADSET_MONO_RX;
         new_tx_device = DEVICE_TTY_HEADSET_MONO_TX;
-        LOGV("In TTY_FULL");
+        LOGD("In TTY_FULL");
     }
     else if(device == SND_DEVICE_TTY_VCO) {
         new_rx_device = DEVICE_TTY_HEADSET_MONO_RX;
         new_tx_device = DEVICE_HANDSET_TX;
-        LOGV("In TTY_VCO");
+        LOGD("In TTY_VCO");
     }
     else if(device == SND_DEVICE_TTY_HCO) {
         new_rx_device = DEVICE_HANDSET_RX;
         new_tx_device = DEVICE_TTY_HEADSET_MONO_TX;
-        LOGV("In TTY_HCO");
+        LOGD("In TTY_HCO");
     }
     else if((device == SND_DEVICE_BT) ||
             (device == SND_DEVICE_BT_EC_OFF)) {
         new_rx_device = DEVICE_BT_SCO_RX;
         new_tx_device = DEVICE_BT_SCO_TX;
-        LOGV("In BT_HCO");
+        LOGD("In BT_HCO");
     }
     else if(device == SND_DEVICE_HEADSET_AND_SPEAKER) {
         new_rx_device = DEVICE_SPEAKER_HEADSET_RX;
         new_tx_device = DEVICE_HEADSET_TX;
-        LOGV("In DEVICE_SPEAKER_HEADSET_RX and DEVICE_HEADSET_TX");
+        LOGD("In DEVICE_SPEAKER_HEADSET_RX and DEVICE_HEADSET_TX");
     }
     else if(device == SND_DEVICE_HEADPHONE_AND_SPEAKER) {
         new_rx_device = DEVICE_SPEAKER_HEADSET_RX;
         new_tx_device = DEVICE_HANDSET_TX;
-        LOGV("In DEVICE_SPEAKER_HEADSET_RX and DEVICE_HANDSET_TX");
+        LOGD("In DEVICE_SPEAKER_HEADSET_RX and DEVICE_HANDSET_TX");
     }
     else if (device == SND_DEVICE_HDMI) {
         new_rx_device = DEVICE_HDMI_STERO_RX;
         new_tx_device = cur_tx;
-        LOGV("In DEVICE_HDMI_STERO_RX and cur_tx");
+        LOGD("In DEVICE_HDMI_STERO_RX and cur_tx");
     }else if(device == SND_DEVICE_FM_TX){
         new_rx_device = DEVICE_FMRADIO_STEREO_RX;
         new_tx_device = cur_tx;
-        LOGV("In DEVICE_FMRADIO_STEREO_RX and cur_tx");
+        LOGD("In DEVICE_FMRADIO_STEREO_RX and cur_tx");
     }
 
     if(new_rx_device != INVALID_DEVICE)
@@ -1505,7 +1508,7 @@ static status_t do_route_audio_rpc(uint32_t device,
         LOGD("new_tx = %d", DEV_ID(new_tx_device));
 
     if (ear_mute == false && !isStreamOn(VOICE_CALL)) {
-        LOGV("Going to enable RX/TX device for voice stream");
+        LOGD("Going to enable RX/TX device for voice stream");
             // Routing Voice
             if ( (new_rx_device != INVALID_DEVICE) && (new_tx_device != INVALID_DEVICE))
             {
@@ -1549,17 +1552,27 @@ static status_t do_route_audio_rpc(uint32_t device,
             updateDeviceInfo(new_rx_device,new_tx_device, rx_acdb_id, tx_acdb_id);
     }
     else if (ear_mute == true && isStreamOnAndActive(VOICE_CALL)) {
-        LOGV("Going to disable RX/TX device during end of voice call");
+        LOGD("Going to disable RX/TX device during end of voice call");
+        LOGD("Ending voice on Rx %d and Tx %d device", DEV_ID(cur_rx), DEV_ID(cur_tx));
         temp = getNodeByStreamType(VOICE_CALL);
         if(temp == NULL)
             return 0;
 
         // Ending voice call
         LOGD("Ending Voice call");
+        
+        msm_route_voice(DEV_ID(cur_rx),DEV_ID(cur_tx), 0);
         msm_end_voice();
         deleteFromTable(VOICE_CALL);
-        updateDeviceInfo(new_rx_device,new_tx_device, 0, 0);
+        
+        enableDevice(cur_rx,0);
+        enableDevice(cur_tx,0);
+
         if(new_rx_device != INVALID_DEVICE && new_tx_device != INVALID_DEVICE) {
+            enableDevice(new_rx_device,1);
+            enableDevice(new_tx_device,1);
+            updateDeviceInfo(new_rx_device,new_tx_device, 0, 0);
+            
             cur_rx = new_rx_device;
             cur_tx = new_tx_device;
         }
