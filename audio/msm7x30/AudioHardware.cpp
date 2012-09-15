@@ -1221,9 +1221,6 @@ status_t AudioHardware::setVoiceVolume(float v)
         v = 1.0;
     }
 
-    if(v == mVoiceVolume)
-        return NO_ERROR;
-
     mVoiceVolume = v;
 
     int vol = lrint(v * 100.0);
