@@ -2266,8 +2266,9 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
 #endif
 
     if (sndDevice != -1 && sndDevice != mCurSndDevice) {
-        ret = doAudioRouteOrMute(sndDevice);
+        // functions inside rely on setting mCurSndDevice before
         mCurSndDevice = sndDevice;
+        ret = doAudioRouteOrMute(sndDevice);
     }
 
     return ret;
